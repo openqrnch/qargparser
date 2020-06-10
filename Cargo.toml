@@ -7,6 +7,7 @@ license = "0BSD"
 keywords = [ "cli", "commandline", "argument", "parser" ]
 repository = "https://github.com/openqrnch/qargparser"
 description = "Argument parser."
+exclude = [ "todo.text", "tag.sh" ]
 
 [dependencies]
 qpprint = { version = "0.1.1" }
