@@ -16,39 +16,57 @@ struct MyContext {
 }
 
 #[cfg(test)]
-fn help_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    _args: &Vec<String>) {
+fn help_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  _args: &Vec<String>
+) {
   ctx.do_help = true;
 }
 
 #[cfg(test)]
-fn verbose_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    _args: &Vec<String>) {
+fn verbose_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  _args: &Vec<String>
+) {
   ctx.verbosity += 1;
 }
 
 #[cfg(test)]
-fn file_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    args: &Vec<String>) {
+fn file_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  args: &Vec<String>
+) {
   ctx.fname = args[0].clone();
 }
 
 
-
 #[cfg(test)]
 fn mkhelp() -> arg::Spec<MyContext> {
-  arg::Builder::new().sopt('h').lopt("help").exit(true).build(help_proc)
+  arg::Builder::new()
+    .sopt('h')
+    .lopt("help")
+    .exit(true)
+    .build(help_proc)
 }
 
 #[cfg(test)]
 fn mkverbose() -> arg::Spec<MyContext> {
-  arg::Builder::new().sopt('v').lopt("verbose").build(verbose_proc)
+  arg::Builder::new()
+    .sopt('v')
+    .lopt("verbose")
+    .build(verbose_proc)
 }
 
 #[cfg(test)]
 fn mkfile() -> arg::Spec<MyContext> {
-  arg::Builder::new().sopt('f').lopt("file")
-    .nargs(arg::Nargs::Count(1), &["FILE"]).build(file_proc)
+  arg::Builder::new()
+    .sopt('f')
+    .lopt("file")
+    .nargs(arg::Nargs::Count(1), &["FILE"])
+    .build(file_proc)
 }
 
 /*
@@ -61,7 +79,9 @@ fn mkparam() -> arg::Spec<MyContext> {
 
 #[test]
 fn app_test_1() -> Result<(), Box<dyn std::error::Error>> {
-  let ctx = MyContext{ ..Default::default() };
+  let ctx = MyContext {
+    ..Default::default()
+  };
   let spec = mkhelp();
   assert_eq!(ctx.do_help, false);
 
@@ -81,7 +101,9 @@ fn app_test_1() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn app_test_2() -> Result<(), Box<dyn std::error::Error>> {
-  let ctx = MyContext{ ..Default::default() };
+  let ctx = MyContext {
+    ..Default::default()
+  };
   let help_spec = mkhelp();
   let verbose_spec = mkverbose();
   let fname_spec = mkfile();
@@ -106,7 +128,9 @@ fn app_test_2() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn app_test_3() -> Result<(), Box<dyn std::error::Error>> {
-  let ctx = MyContext{ ..Default::default() };
+  let ctx = MyContext {
+    ..Default::default()
+  };
   let help_spec = mkhelp();
   let verbose_spec = mkverbose();
   let fname_spec = mkfile();
@@ -127,4 +151,4 @@ fn app_test_3() -> Result<(), Box<dyn std::error::Error>> {
   Ok(())
 }
 
-/* vim: set ft=rust et sw=2 ts=2 sts=2 cinoptions=2 tw=79 :*/
+/* vim: set ft=rust et sw=2 ts=2 sts=2 cinoptions=2 tw=79 : */

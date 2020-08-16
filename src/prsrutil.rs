@@ -1,14 +1,14 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use std::cell::RefCell;
 //use std::env;
 
-use crate::spec::{Spec};
+use crate::spec::Spec;
 
 //use crate::err::{ErrKind};
 
 #[cfg(test)]
-use crate::spec::{Nargs,Builder};
+use crate::spec::{Builder, Nargs};
 
 #[cfg(test)]
 macro_rules! vec_of_strings {
@@ -60,8 +60,11 @@ fn is_end_of_opts(arg: &str) -> bool {
 */
 
 
-pub(crate) fn split_sopts_arg<C>(args: &mut Vec<String>,
-    argidx: usize, sopts: &HashMap<char, Rc<RefCell<Spec<C>>>>) {
+pub(crate) fn split_sopts_arg<C>(
+  args: &mut Vec<String>,
+  argidx: usize,
+  sopts: &HashMap<char, Rc<RefCell<Spec<C>>>>
+) {
   let curarg = &args[argidx][1..].to_string().clone();
   let chars: Vec<char> = curarg.chars().collect();
   let mut optarg: Option<String> = None;
@@ -106,7 +109,6 @@ pub(crate) fn split_sopts_arg<C>(args: &mut Vec<String>,
 }
 
 
-
 #[cfg(test)]
 mod tests {
   #[derive(Default)]
@@ -115,16 +117,25 @@ mod tests {
     pub(super) verbosity: u8,
     pub(super) fname: String
   }
-  pub(super) fn help_proc(_spec: &super::Spec<TestCtx>, ctx: &mut TestCtx,
-      _args: &Vec<String>) {
+  pub(super) fn help_proc(
+    _spec: &super::Spec<TestCtx>,
+    ctx: &mut TestCtx,
+    _args: &Vec<String>
+  ) {
     ctx.do_help = true;
   }
-  pub(super) fn verbose_proc(_spec: &super::Spec<TestCtx>, ctx: &mut TestCtx,
-      _args: &Vec<String>) {
+  pub(super) fn verbose_proc(
+    _spec: &super::Spec<TestCtx>,
+    ctx: &mut TestCtx,
+    _args: &Vec<String>
+  ) {
     ctx.verbosity += 1;
   }
-  pub(super) fn file_proc(_spec: &super::Spec<TestCtx>, ctx: &mut TestCtx,
-      args: &Vec<String>) {
+  pub(super) fn file_proc(
+    _spec: &super::Spec<TestCtx>,
+    ctx: &mut TestCtx,
+    args: &Vec<String>
+  ) {
     ctx.fname = args[0].clone();
   }
 }
@@ -134,7 +145,7 @@ mod tests {
 fn test_split_sopt1() {
   //let mut ctx = tests::TestCtx{ ..Default::default() };
   let mut sopts: HashMap<char, Rc<RefCell<Spec<tests::TestCtx>>>> =
-      HashMap::new();
+    HashMap::new();
   let spec = Builder::new()
     .sopt('h')
     .lopt("help")
@@ -152,11 +163,16 @@ fn test_split_sopt1() {
 fn test_split_sopt2() {
   //let mut _ctx = tests::TestCtx{ ..Default::default() };
   let mut sopts: HashMap<char, Rc<RefCell<Spec<tests::TestCtx>>>> =
-      HashMap::new();
+    HashMap::new();
 
-  let spec_f = Builder::new().sopt('f').lopt("file")
-    .nargs(Nargs::Count(1), &["FILE"]).build(tests::file_proc);
-  let spec_v = Builder::new().sopt('v').lopt("verbose")
+  let spec_f = Builder::new()
+    .sopt('f')
+    .lopt("file")
+    .nargs(Nargs::Count(1), &["FILE"])
+    .build(tests::file_proc);
+  let spec_v = Builder::new()
+    .sopt('v')
+    .lopt("verbose")
     .build(tests::verbose_proc);
 
   sopts.insert('f', Rc::new(RefCell::new(spec_f)));
@@ -181,9 +197,12 @@ fn test_split_sopt2() {
 fn test_split_sopt3() {
   //let mut _ctx = tests::TestCtx{ ..Default::default() };
   let mut sopts: HashMap<char, Rc<RefCell<Spec<tests::TestCtx>>>> =
-      HashMap::new();
-  let spec_f = Builder::new().sopt('f').lopt("file")
-    .nargs(Nargs::Count(1), &["ARG"]).build(tests::file_proc);
+    HashMap::new();
+  let spec_f = Builder::new()
+    .sopt('f')
+    .lopt("file")
+    .nargs(Nargs::Count(1), &["ARG"])
+    .build(tests::file_proc);
 
   sopts.insert('f', Rc::new(RefCell::new(spec_f)));
 
@@ -201,11 +220,16 @@ fn test_split_sopt3() {
 fn test_split_sopt4() {
   //let mut _ctx = tests::TestCtx{ ..Default::default() };
   let mut sopts: HashMap<char, Rc<RefCell<Spec<tests::TestCtx>>>> =
-      HashMap::new();
+    HashMap::new();
 
-  let spec_f = Builder::new().sopt('f').lopt("file")
-    .nargs(Nargs::Count(1), &["ARG"]).build(tests::file_proc);
-  let spec_v = Builder::new().sopt('v').lopt("verbose")
+  let spec_f = Builder::new()
+    .sopt('f')
+    .lopt("file")
+    .nargs(Nargs::Count(1), &["ARG"])
+    .build(tests::file_proc);
+  let spec_v = Builder::new()
+    .sopt('v')
+    .lopt("verbose")
     .build(tests::verbose_proc);
 
   sopts.insert('f', Rc::new(RefCell::new(spec_f)));
@@ -220,13 +244,14 @@ fn test_split_sopt4() {
 }
 
 
-
-
-
 /// Ensure that there are sufficient arguments remaining for argspec to
 /// process.
-pub(crate) fn check_req_arg_count<C>(args: &Vec<String>, idx: usize,
-    spec: &Spec<C>, offset: bool) -> bool {
+pub(crate) fn check_req_arg_count<C>(
+  args: &Vec<String>,
+  idx: usize,
+  spec: &Spec<C>,
+  offset: bool
+) -> bool {
   if spec.get_nargs() != 0 {
     let nremain = if offset == true {
       args.len() - idx - 1
@@ -241,24 +266,20 @@ pub(crate) fn check_req_arg_count<C>(args: &Vec<String>, idx: usize,
 }
 
 
-
-
-
-
 // --file=foo  -->  --file foo
 pub(crate) fn split_lopt(argv: &mut Vec<String>, i: usize) {
   match argv[i].find('=') {
     None => (),
     Some(idx) => {
-      if idx == 0 || idx == argv[i].len()-1 {
+      if idx == 0 || idx == argv[i].len() - 1 {
         ()
       }
 
       let l = argv[i][..idx].to_string();
-      let r = argv[i][idx+1..].to_string();
+      let r = argv[i][idx + 1..].to_string();
 
       argv[i] = l;
-      argv.insert(i+1, r);
+      argv.insert(i + 1, r);
     }
   }
 }
@@ -317,4 +338,4 @@ fn test_split_lopt_eq_right() {
   assert_eq!(argv[2], "bar");
 }
 
-/* vim: set ft=rust et sw=2 ts=2 sts=2 cinoptions=2 tw=79 :*/
+/* vim: set ft=rust et sw=2 ts=2 sts=2 cinoptions=2 tw=79 : */

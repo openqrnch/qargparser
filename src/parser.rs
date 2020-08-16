@@ -6,10 +6,10 @@ use std::env;
 
 use qpprint as pprint;
 
-use crate::spec::{Spec};
 use crate::prsrutil;
+use crate::spec::Spec;
 
-use crate::err::{ErrKind,SpecErr};
+use crate::err::{ErrKind, SpecErr};
 
 
 pub struct Parser<C> {
@@ -35,7 +35,10 @@ impl<C> Parser<C> {
   }
 
   pub fn from_args<I, S>(argv0: &str, args: I, ctx: C) -> Self
-      where I: IntoIterator<Item=S>, S: AsRef<str> {
+  where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>
+  {
     let specs = Vec::new();
     let sopts = HashMap::new();
     let lopts = HashMap::new();
@@ -46,8 +49,19 @@ impl<C> Parser<C> {
       .map(|x| String::from(x.as_ref()))
       .collect::<Vec<_>>();
 
-    Parser { specs, sopts, lopts, posargs, named, argv0: String::from(argv0),
-      args: new_args, ctx, curarg: 0, posarg: 0, err: None }
+    Parser {
+      specs,
+      sopts,
+      lopts,
+      posargs,
+      named,
+      argv0: String::from(argv0),
+      args: new_args,
+      ctx,
+      curarg: 0,
+      posarg: 0,
+      err: None
+    }
   }
 
   pub fn add(&mut self, spec: Spec<C>) -> Result<(), ErrKind<C>> {
@@ -72,8 +86,8 @@ impl<C> Parser<C> {
     }
     if let Some(ref n) = asp.name {
       if self.named.contains_key(n) {
-        let errstr = format!("The positional argument '{}' already in use.",
-            n);
+        let errstr =
+          format!("The positional argument '{}' already in use.", n);
         return Err(ErrKind::Collision(errstr));
       }
     }
@@ -102,8 +116,11 @@ impl<C> Parser<C> {
       // Make sure the last positional argument spec doesn't capture "the
       // rest".
       if self.have_capture_rest() {
-        return Err(ErrKind::BadContext("Can't positional argument after
-existing 'capture all'".to_string()));
+        return Err(ErrKind::BadContext(
+          "Can't add positional argument after
+existing 'capture all' argument"
+            .to_string()
+        ));
       }
       self.posargs.push(Rc::clone(&aspec_rc));
     }
@@ -138,14 +155,14 @@ existing 'capture all'".to_string()));
   }
 
   pub fn parse(&mut self) -> Result<Option<Rc<RefCell<Spec<C>>>>, ErrKind<C>> {
-/*
-    for n in self {
-      let spec = n.borrow();
-      if spec.exit == true {
-        return Ok(Some(Rc::clone(&n)));
-      }
-    }
-*/
+    /*
+        for n in self {
+          let spec = n.borrow();
+          if spec.exit == true {
+            return Ok(Some(Rc::clone(&n)));
+          }
+        }
+    */
     while let Ok(Some(n)) = self.next() {
       let spec = n.borrow();
       if spec.exit == true {
@@ -157,7 +174,6 @@ existing 'capture all'".to_string()));
 
     Ok(None)
   }
-
 
 
   pub fn next(&mut self) -> Result<Option<Rc<RefCell<Spec<C>>>>, ErrKind<C>> {
@@ -173,7 +189,6 @@ existing 'capture all'".to_string()));
         Ok(spec) => ret = Some(spec),
         Err(err) => return Err(err)
       }
-
     } else if prsrutil::maybe_sopt(&self.args[self.curarg]) {
       match self.proc_sopt(&mut args) {
         Ok(spec) => ret = Some(spec),
@@ -199,8 +214,10 @@ existing 'capture all'".to_string()));
   }
 
 
-  fn proc_sopt(&mut self, args: &mut Vec<String>) ->
-        Result<Rc<RefCell<Spec<C>>>, ErrKind<C>> {
+  fn proc_sopt(
+    &mut self,
+    args: &mut Vec<String>
+  ) -> Result<Rc<RefCell<Spec<C>>>, ErrKind<C>> {
     let spec_ref: Rc<RefCell<Spec<C>>>;
 
     // ["-vfbar"] -> ["-v", "-f", "bar"]
@@ -216,8 +233,7 @@ existing 'capture all'".to_string()));
 
       //self.curarg += 1;
       match self.copyout_args(&spec_ref, args) {
-        Ok(_) => {
-        }
+        Ok(_) => {}
         Err(err) => {
           return Err(err);
         }
@@ -231,8 +247,10 @@ existing 'capture all'".to_string()));
   }
 
 
-  fn proc_lopt(&mut self, args: &mut Vec<String>) ->
-        Result<Rc<RefCell<Spec<C>>>, ErrKind<C>> {
+  fn proc_lopt(
+    &mut self,
+    args: &mut Vec<String>
+  ) -> Result<Rc<RefCell<Spec<C>>>, ErrKind<C>> {
     let spec_ref: Rc<RefCell<Spec<C>>>;
 
     // ["--foo=bar"] -> ["--foo", "bar"]
@@ -245,8 +263,7 @@ existing 'capture all'".to_string()));
 
       //self.curarg += 1;
       match self.copyout_args(&spec_ref, args) {
-        Ok(_) => {
-        }
+        Ok(_) => {}
         Err(err) => {
           return Err(err);
         }
@@ -260,21 +277,22 @@ existing 'capture all'".to_string()));
   }
 
 
-  fn proc_posarg(&mut self, args: &mut Vec<String>) ->
-        Result<Rc<RefCell<Spec<C>>>, ErrKind<C>> {
+  fn proc_posarg(
+    &mut self,
+    args: &mut Vec<String>
+  ) -> Result<Rc<RefCell<Spec<C>>>, ErrKind<C>> {
     // Make sure there's an argspecs to handle this argument
     if self.posarg == self.posargs.len() {
-      return Err(ErrKind::MissSpec("Out of positional argument specs \
-argument".to_string()));
+      return Err(ErrKind::MissSpec(
+        "Out of positional argument specs argument".to_string()
+      ));
     }
 
     let spec_ref = Rc::clone(&self.posargs[self.posarg]);
 
     match self.copyout_args(&spec_ref, args) {
-      Ok(_) => {
-      }
-      Err(_err) => {
-      }
+      Ok(_) => {}
+      Err(_err) => {}
     }
 
     self.posarg += 1;
@@ -284,9 +302,11 @@ argument".to_string()));
 
 
   // If this argspec has arguments, then copy arguments to an argument vector.
-  fn copyout_args(&mut self, spec_rc: &Rc<RefCell<Spec<C>>>,
-      args: &mut Vec<String>) -> Result<(), ErrKind<C>> {
-
+  fn copyout_args(
+    &mut self,
+    spec_rc: &Rc<RefCell<Spec<C>>>,
+    args: &mut Vec<String>
+  ) -> Result<(), ErrKind<C>> {
     let spec = spec_rc.borrow();
 
     // If this is is a "capture the rest of the arguments" spec, then captire
@@ -301,10 +321,16 @@ argument".to_string()));
 
     // If this argspec requires arguments then make sure there are enough
     // arguments remaining.
-    if !prsrutil::check_req_arg_count(&self.args, self.curarg, &spec,
-        spec.is_opt()) {
-      let err = SpecErr{spec: Rc::clone(spec_rc),
-        msg: "Missing expected argument.".to_string()};
+    if !prsrutil::check_req_arg_count(
+      &self.args,
+      self.curarg,
+      &spec,
+      spec.is_opt()
+    ) {
+      let err = SpecErr {
+        spec: Rc::clone(spec_rc),
+        msg: "Missing expected argument.".to_string()
+      };
       return Err(ErrKind::MissArg(err));
     }
 
@@ -342,43 +368,58 @@ argument".to_string()));
 
 
   fn get_opts(&self) -> Vec<Rc<RefCell<Spec<C>>>> {
-    self.specs.iter()
-      .filter(|x| {let x = x.borrow(); x.is_opt() })
-      .map(|n| {
-        Rc::clone(n)
-      }).collect()
+    self
+      .specs
+      .iter()
+      .filter(|x| {
+        let x = x.borrow();
+        x.is_opt()
+      })
+      .map(|n| Rc::clone(n))
+      .collect()
   }
 
 
   fn get_posargs(&self) -> Vec<Rc<RefCell<Spec<C>>>> {
-    self.specs.iter()
-      .filter(|x| {let x = x.borrow(); x.is_pos() })
-      .map(|n| {
-        Rc::clone(n)
-      }).collect()
+    self
+      .specs
+      .iter()
+      .filter(|x| {
+        let x = x.borrow();
+        x.is_pos()
+      })
+      .map(|n| Rc::clone(n))
+      .collect()
   }
 
 
-  pub fn validate(&self) -> Result<(), ErrKind<C>>  {
+  pub fn validate(&self) -> Result<(), ErrKind<C>> {
     for i in self.posarg..self.posargs.len() {
       let spec = self.posargs[i].borrow();
       if spec.is_req() {
-        let err = SpecErr{spec: Rc::clone(&self.posargs[i]),
-          msg: "Missing required positional argument.".to_string()};
-        return Err(ErrKind::MissArg(err))
+        let err = SpecErr {
+          spec: Rc::clone(&self.posargs[i]),
+          msg: "Missing required positional argument.".to_string()
+        };
+        return Err(ErrKind::MissArg(err));
       }
     }
     Ok(())
   }
 
 
+  /// Print out help text for all registered options.
   pub fn usage(&self, out: &mut dyn std::io::Write) {
     self.print_usage(out);
     self.print_opts(out);
     self.print_posargs(out);
   }
 
-
+  /// Print the "Usage" part of the help.
+  ///
+  /// The output format is:
+  ///
+  /// Usage: <command> [arguments] [positional arguments]
   pub fn print_usage(&self, out: &mut dyn std::io::Write) {
     let mut sv = Vec::new();
     let mut pp = pprint::PPrint::new();
@@ -410,6 +451,8 @@ argument".to_string()));
   }
 
 
+  /// Print the help section for "options".  Options are arguments that
+  /// have a short and/or long option name.
   pub fn print_opts(&self, out: &mut dyn std::io::Write) {
     let mut pp = pprint::PPrint::new();
 
@@ -429,7 +472,7 @@ argument".to_string()));
     }
   }
 
-
+  /// Print the help section for positional arguments.
   pub fn print_posargs(&self, out: &mut dyn std::io::Write) {
     let mut pp = pprint::PPrint::new();
 
@@ -438,12 +481,14 @@ argument".to_string()));
       return;
     }
 
-    out.write(b"\narguments:\n").expect("Unabele to write output.");
+    out
+      .write(b"\narguments:\n")
+      .expect("Unable to write output.");
 
     for spec in &specs {
       let spec = spec.borrow();
       pp.set_indent(2);
-      pp.print_p(out, &spec.get_opts_usage_str());
+      pp.print_p(out, &spec.get_help_title_str());
       pp.set_indent(4);
       pp.print_plist(out, spec.get_help_text());
     }
@@ -468,7 +513,9 @@ impl<C> Iterator for Parser<C> {
 
   fn next(&mut self) -> Option<Self::Item> {
     match self.next() {
-      Ok(res) => { return res; },
+      Ok(res) => {
+        return res;
+      }
       Err(err) => {
         self.err = Some(err);
         return None;
@@ -478,4 +525,4 @@ impl<C> Iterator for Parser<C> {
 }
 
 
-/* vim: set ft=rust et sw=2 ts=2 sts=2 cinoptions=2 tw=79 :*/
+/* vim: set ft=rust et sw=2 ts=2 sts=2 cinoptions=2 tw=79 : */

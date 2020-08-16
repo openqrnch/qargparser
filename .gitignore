@@ -1,5 +1,7 @@
 .*.swp
+.efiles
 .fossil-settings
 .fslckout
 target
 Cargo.lock
+todo.text

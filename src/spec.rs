@@ -4,10 +4,9 @@
 pub enum Nargs {
   None,
   Count(usize),
-  Remainder,
-  //Optional,
-  //ZeroOrMore,
-  //OneOrMore
+  Remainder /*Optional,
+             *ZeroOrMore,
+             *OneOrMore */
 }
 
 impl Default for Nargs {
@@ -18,6 +17,22 @@ impl Default for Nargs {
 
 type Handler<C> = fn(spec: &Spec<C>, ctx: &mut C, args: &Vec<String>);
 
+
+/*
+type HandlerStr<C> = fn(spec: &Spec<C>, ctx: &mut C, arg: &str);
+type HandlerString<C> = fn(spec: &Spec<C>, ctx: &mut C, arg: String);
+
+type HandlerStrVec<C, I, S> = fn(spec: &Spec<C>, ctx: &mut C, args: I)
+  where I: IntoIterator<Item=S>,
+        S: AsRef<str>;
+
+enum Handler {
+  Str(HandlerStr),
+  String(HandlerString)
+}
+*/
+
+
 //#[derive(Default)]
 pub struct Builder {
   sopt: Option<char>,
@@ -27,13 +42,25 @@ pub struct Builder {
   exit: bool,
   required: bool,
   metanames: Vec<String>,
-  desc: Vec<String>
+  desc: Vec<String>,
+
+  /// Whether to hide this entry from the help text.
+  hidden: bool
 }
 
 impl Builder {
   pub fn new() -> Self {
-    Builder{ sopt: None, lopt: None, name: None, nargs: Nargs::None,
-    exit: false, required: false, metanames: Vec::new(), desc: Vec::new() }
+    Builder {
+      sopt: None,
+      lopt: None,
+      name: None,
+      nargs: Nargs::None,
+      exit: false,
+      required: false,
+      metanames: Vec::new(),
+      desc: Vec::new(),
+      hidden: false
+    }
   }
 
   pub fn sopt(&mut self, sopt: char) -> &mut Self {
@@ -48,20 +75,26 @@ impl Builder {
     self.name = Some(String::from(name));
     self
   }
+
   pub fn nargs<I, S>(&mut self, nargs: Nargs, metanames: I) -> &mut Self
-      where I: IntoIterator<Item=S>, S: AsRef<str>
+  where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>
   {
     self.nargs = nargs;
     self.metanames(metanames);
     self
   }
   pub fn metanames<I, S>(&mut self, metanames: I) -> &mut Self
-      where I: IntoIterator<Item=S>, S: AsRef<str>
+  where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>
   {
     self.metanames.clear();
     let nargs = match self.nargs {
-      Nargs::Count(n) => { n }
-      _ => { 0 }
+      Nargs::Remainder => 1,
+      Nargs::Count(n) => n,
+      _ => 0
     };
 
     let names = metanames
@@ -88,9 +121,16 @@ impl Builder {
     self.required = req;
     self
   }
-  pub fn help<I, S>(&mut self, text: I) -> &mut Self
-      where I: IntoIterator<Item=S>, S: AsRef<str> {
+  pub fn hidden(&mut self, hidden: bool) -> &mut Self {
+    self.hidden = hidden;
+    self
+  }
 
+  pub fn help<I, S>(&mut self, text: I) -> &mut Self
+  where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>
+  {
     for x in text.into_iter() {
       //println!("moo: {}", x.as_ref());
       self.desc.push(String::from(x.as_ref()));
@@ -107,16 +147,24 @@ impl Builder {
   }
 
   pub fn build<C>(&self, proc: Handler<C>) -> Spec<C> {
-    Spec { sopt: self.sopt, lopt: self.lopt.clone(), name: self.name.clone(),
-      nargs: self.nargs.clone(), exit: self.exit, required: self.required,
-      metanames: self.metanames.clone(), desc: self.desc.clone(), proc }
+    Spec {
+      sopt: self.sopt,
+      lopt: self.lopt.clone(),
+      name: self.name.clone(),
+      nargs: self.nargs.clone(),
+      exit: self.exit,
+      required: self.required,
+      metanames: self.metanames.clone(),
+      desc: self.desc.clone(),
+      hidden: self.hidden,
+      proc
+    }
   }
 }
 
 
 //#[derive(Default)]
 pub struct Spec<C> {
-
   /// Optional short option.  This must be unique within a `[Parser]` context.
   /// If this is `Some()` value then this is not a positional argument.
   pub(crate) sopt: Option<char>,
@@ -133,32 +181,43 @@ pub struct Spec<C> {
   required: bool,
   metanames: Vec<String>,
   desc: Vec<String>,
+  hidden: bool,
   pub(crate) proc: Handler<C>
 }
 
 
-
 impl<C> Spec<C> {
+  /// Return a boolean indicating whether this arg spec is configured to
+  /// capture all the remaining arguments.
   pub fn is_capture_rest(&self) -> bool {
     match self.nargs {
-      Nargs::None => {
-        false
-      }
-      Nargs::Count(_n) => {
-        false
-      }
-      Nargs::Remainder => {
-        true
-      }
+      Nargs::None => false,
+      Nargs::Count(_n) => false,
+      Nargs::Remainder => true
     }
   }
 
+  /// Return boolean indicating whether this arg spec will abort the parser.
   pub fn is_exit(&self) -> bool {
     self.exit
   }
+
+  /// Return boolean indicating whether this arg spec represents an "option".
+  ///
+  /// "Options" come in two forms: short or long
+  ///
+  /// Short options are in the form "<single dash><single non-dash character>",
+  /// like "-h", "-f".
+  ///
+  /// Long options are in the form "<double dash><word>", like "--help",
+  /// --file".
+  ///
+  /// This function will return true for either form.
   pub fn is_opt(&self) -> bool {
     self.sopt.is_some() || self.lopt.is_some()
   }
+
+  /// Return boolean indicating whether this arg is a positional argument.
   pub fn is_pos(&self) -> bool {
     self.sopt.is_none() && self.lopt.is_none()
   }
@@ -166,14 +225,15 @@ impl<C> Spec<C> {
     self.required
   }
 
+  pub fn is_hidden(&self) -> bool {
+    self.hidden
+  }
+
+  // ToDo: Don't panic!(), return Result instead.
   pub fn get_nargs(&self) -> usize {
     match self.nargs {
-      Nargs::None => {
-        0
-      }
-      Nargs::Count(n) => {
-        n
-      }
+      Nargs::None => 0,
+      Nargs::Count(n) => n,
       Nargs::Remainder => {
         panic!("Can't get number of arguments for a capture-all spec.");
       }
@@ -184,14 +244,18 @@ impl<C> Spec<C> {
       Nargs::None => false,
       Nargs::Count(n) => {
         if n > 0 {
-          return true
+          return true;
         }
         false
-      },
+      }
       Nargs::Remainder => false
     }
   }
 
+  /// Generate a string representation of a short option.
+  /// Does not include any arguments.
+  ///
+  /// Examples: "-h", "-f"
   fn get_sopt_str(&self) -> Option<String> {
     if let Some(sopt) = self.sopt {
       let mut ret = '-'.to_string();
@@ -201,6 +265,11 @@ impl<C> Spec<C> {
     }
     None
   }
+
+  /// Generate a string representation of a long option.
+  /// Does not include any arguments.
+  ///
+  /// Examples: "--help", "--file"
   fn get_lopt_str(&self) -> Option<String> {
     if let Some(ref lopt) = self.lopt {
       let mut ret = "--".to_string();
@@ -212,14 +281,26 @@ impl<C> Spec<C> {
 
   fn get_joined_meta_str(&self) -> Option<String> {
     match self.nargs {
-      Nargs::None => { None }
-      Nargs::Count(_n) => {
-        Some(self.metanames.join(" "))
+      Nargs::None => None,
+      Nargs::Count(_n) => Some(self.metanames.join(" ")),
+      Nargs::Remainder => {
+        // ARG [ARG ...]
+        let metaname = if self.metanames.len() > 0 {
+          &self.metanames[0]
+        } else {
+          "ARG"
+        };
+        Some(metaname.to_string())
       }
-      Nargs::Remainder => { None }
     }
   }
 
+  /// Get a short option argument string.
+  ///
+  /// Example formats:
+  /// - Some("-h")
+  /// - Some("-f FILE")
+  /// - Some("-p XCOORD YCOORD")
   fn get_soptarg_str(&self) -> Option<String> {
     if let Some(optstr) = self.get_sopt_str() {
       let mut ret = optstr.to_owned();
@@ -302,6 +383,12 @@ impl<C> Spec<C> {
     return args.join(", ");
   }
 
+
+  /// Generate a string that shows a representation of this argument
+  /// specification suitable for use in a "Usage: " string.
+  ///
+  /// Required parameters are enclosed by '<' and '>' charcters.
+  /// Optional parameters are enclossed by '[' and ']' characters.
   pub fn get_usage_str(&self) -> String {
     let mut ret: String;
     if self.required {
@@ -315,7 +402,14 @@ impl<C> Spec<C> {
     } else if let Some(optstr) = self.get_soptarg_str() {
       ret.push_str(&optstr);
     } else if let Some(metastr) = self.get_joined_meta_str() {
-      ret.push_str(&metastr);
+      let s = match self.nargs {
+        Nargs::Count(_) => metastr.clone(),
+        Nargs::Remainder => format!("{0} [{0} ...]", metastr),
+        _ => panic!(
+          "Attempted to print positional argument spec with no arguments"
+        )
+      };
+      ret.push_str(&s);
     } else {
       panic!("Unexpected state");
     }
@@ -327,6 +421,29 @@ impl<C> Spec<C> {
     }
 
     return ret;
+  }
+
+  pub fn get_help_title_str(&self) -> String {
+    let mut args: Vec<String> = Vec::new();
+    if let Some(lstr) = self.get_soptarg_str() {
+      args.push(lstr);
+    }
+    if let Some(rstr) = self.get_loptarg_str() {
+      args.push(rstr);
+    }
+    if args.len() == 0 {
+      if let Some(posarg) = self.get_joined_meta_str() {
+        let s = match self.nargs {
+          Nargs::Count(_) => posarg.clone(),
+          Nargs::Remainder => posarg.clone(),
+          _ => panic!(
+            "Attempted to print positional argument spec with no arguments"
+          )
+        };
+        args.push(s);
+      }
+    }
+    return args.join(", ");
   }
 
 
@@ -387,39 +504,68 @@ mod tests {
     pub(super) fname: String,
     pub(super) params: HashMap<String, String>
   }
-  pub(super) fn help_proc(_spec: &super::Spec<TestCtx>, ctx: &mut TestCtx,
-      _args: &Vec<String>) {
+  pub(super) fn help_proc(
+    _spec: &super::Spec<TestCtx>,
+    ctx: &mut TestCtx,
+    _args: &Vec<String>
+  ) {
     ctx.do_help = true;
   }
-  pub(super) fn verbose_proc(_spec: &super::Spec<TestCtx>, ctx: &mut TestCtx,
-      _args: &Vec<String>) {
+  pub(super) fn verbose_proc(
+    _spec: &super::Spec<TestCtx>,
+    ctx: &mut TestCtx,
+    _args: &Vec<String>
+  ) {
     ctx.verbosity += 1;
   }
-  pub(super) fn file_proc(_spec: &super::Spec<TestCtx>, ctx: &mut TestCtx,
-      args: &Vec<String>) {
+  pub(super) fn file_proc(
+    _spec: &super::Spec<TestCtx>,
+    ctx: &mut TestCtx,
+    args: &Vec<String>
+  ) {
     ctx.fname = args[0].clone();
   }
-  pub(super) fn param_proc(_spec: &super::Spec<TestCtx>, ctx: &mut TestCtx,
-      args: &Vec<String>) {
+  pub(super) fn param_proc(
+    _spec: &super::Spec<TestCtx>,
+    ctx: &mut TestCtx,
+    args: &Vec<String>
+  ) {
     ctx.params.insert(args[0].clone(), args[1].clone());
   }
-  pub(super) fn args_proc(_spec: &super::Spec<TestCtx>, _ctx: &mut TestCtx,
-      _args: &Vec<String>) {
+  pub(super) fn args_proc(
+    _spec: &super::Spec<TestCtx>,
+    _ctx: &mut TestCtx,
+    _args: &Vec<String>
+  ) {
   }
 
 
   pub(super) fn mkhelp(sopt: bool, lopt: bool) -> super::Spec<TestCtx> {
     let mut bldr = super::Builder::new();
-    if sopt { bldr.sopt('h'); }
-    if lopt { bldr.lopt("help"); }
+    if sopt {
+      bldr.sopt('h');
+    }
+    if lopt {
+      bldr.lopt("help");
+    }
     bldr.build(help_proc)
   }
-  pub(super) fn mkfile(sopt: bool, lopt: bool, name: bool, argname: bool) ->
-        super::Spec<TestCtx> {
+  pub(super) fn mkfile(
+    sopt: bool,
+    lopt: bool,
+    name: bool,
+    argname: bool
+  ) -> super::Spec<TestCtx> {
     let mut bldr = super::Builder::new();
-    if sopt { bldr.sopt('f'); }
-    if lopt { bldr.lopt("file"); }
-    if name { bldr.name("file"); }
+    if sopt {
+      bldr.sopt('f');
+    }
+    if lopt {
+      bldr.lopt("file");
+    }
+    if name {
+      bldr.name("file");
+    }
     if argname {
       bldr.nargs(super::Nargs::Count(1), &["FILE"]);
     } else {
@@ -429,12 +575,22 @@ mod tests {
     bldr.build(file_proc)
   }
 
-  pub(super) fn mkparam(sopt: bool, lopt: bool, name: bool, defargs: usize) ->
-        super::Spec<TestCtx> {
+  pub(super) fn mkparam(
+    sopt: bool,
+    lopt: bool,
+    name: bool,
+    defargs: usize
+  ) -> super::Spec<TestCtx> {
     let mut bldr = super::Builder::new();
-    if sopt { bldr.sopt('p'); }
-    if lopt { bldr.lopt("param"); }
-    if name { bldr.name("param"); }
+    if sopt {
+      bldr.sopt('p');
+    }
+    if lopt {
+      bldr.lopt("param");
+    }
+    if name {
+      bldr.name("param");
+    }
     if defargs > 1 {
       bldr.nargs(super::Nargs::Count(2), &["KEY", "VALUE"]);
     } else if defargs == 1 {
@@ -448,13 +604,9 @@ mod tests {
 }
 
 
-
-
-
 // Make this a macro?
 #[cfg(test)]
-fn expect_opt_str(optstr: &Option<String>, expect: &str)
-{
+fn expect_opt_str(optstr: &Option<String>, expect: &str) {
   if let Some(optstr) = optstr {
     assert_eq!(optstr, expect);
   } else {
@@ -464,15 +616,17 @@ fn expect_opt_str(optstr: &Option<String>, expect: &str)
 
 
 #[test]
-fn test_metanames()
-{
-  let spec = Builder::new().sopt('h').lopt("help").exit(true)
+fn test_metanames() {
+  let spec = Builder::new()
+    .sopt('h')
+    .lopt("help")
+    .exit(true)
     .build(tests::help_proc);
 
   // No meta names for plain switches
   assert_eq!(spec.get_joined_meta_str(), None);
 
-  let spec  = Builder::new()
+  let spec = Builder::new()
     .sopt('f')
     .lopt("file")
     .name("file")
@@ -486,7 +640,7 @@ fn test_metanames()
 
 
   let nm: Vec<String> = Vec::new();
-  let spec  = Builder::new()
+  let spec = Builder::new()
     .sopt('f')
     .lopt("file")
     .name("file")
@@ -531,11 +685,12 @@ fn test_metanames()
 }
 
 
-
 #[test]
-fn test_help_switch()
-{
-  let spec = Builder::new().sopt('h').lopt("help").exit(true)
+fn test_help_switch() {
+  let spec = Builder::new()
+    .sopt('h')
+    .lopt("help")
+    .exit(true)
     .build(tests::help_proc);
 
   assert_eq!(spec.is_exit(), true);
@@ -554,9 +709,11 @@ fn test_help_switch()
 }
 
 #[test]
-fn test_switch_noshort()
-{
-  let spec = Builder::new().lopt("help").exit(true).build(tests::help_proc);
+fn test_switch_noshort() {
+  let spec = Builder::new()
+    .lopt("help")
+    .exit(true)
+    .build(tests::help_proc);
 
   assert_eq!(spec.is_exit(), true);
 
@@ -566,22 +723,19 @@ fn test_switch_noshort()
 
 
 #[test]
-fn test_switch_nolong()
-{
+fn test_switch_nolong() {
   let spec = Builder::new().sopt('h').exit(true).build(tests::help_proc);
 
   assert_eq!(spec.is_exit(), true);
 
   let loptstr = spec.get_lopt_str();
   assert_eq!(loptstr.is_none(), true);
-
 }
 
 
 #[test]
-fn test_file_optarg()
-{
-  let spec  = Builder::new()
+fn test_file_optarg() {
+  let spec = Builder::new()
     .sopt('f')
     .lopt("file")
     .name("file")
@@ -594,9 +748,8 @@ fn test_file_optarg()
   expect_opt_str(&spec.get_loptarg_str(), "--file FILE");
 
 
-
   let nm: Vec<String> = Vec::new();
-  let spec  = Builder::new()
+  let spec = Builder::new()
     .sopt('f')
     .lopt("file")
     .name("file")
@@ -606,12 +759,10 @@ fn test_file_optarg()
   expect_opt_str(&spec.get_joined_meta_str(), "ARG");
   expect_opt_str(&spec.get_soptarg_str(), "-f ARG");
   expect_opt_str(&spec.get_loptarg_str(), "--file ARG");
-
 }
 
 #[test]
-fn test_param_optarg()
-{
+fn test_param_optarg() {
   let spec = super::Builder::new()
     .sopt('p')
     .lopt("param")
@@ -631,7 +782,6 @@ fn test_param_optarg()
   expect_opt_str(&spec.get_joined_meta_str(), "KEY ARG");
 
 
-
   let nm: Vec<String> = Vec::new();
   let spec = super::Builder::new()
     .sopt('p')
@@ -641,7 +791,6 @@ fn test_param_optarg()
     .build(tests::param_proc);
 
   expect_opt_str(&spec.get_joined_meta_str(), "ARG ARG");
-
 }
 
 

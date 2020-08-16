@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use qargparser as arg;
 
-#[derive(Default,Debug)]
+#[derive(Default, Debug)]
 struct MyContext {
   do_help: bool,
   do_version: bool,
@@ -10,16 +10,22 @@ struct MyContext {
   fname: String,
   params: HashMap<String, String>,
   cmd: String,
-  subcmd: String,
+  subcmd: String
 }
 
-fn help_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    _args: &Vec<String>) {
+fn help_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  _args: &Vec<String>
+) {
   ctx.do_help = true;
 }
 
-fn verbose_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    _args: &Vec<String>) {
+fn verbose_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  _args: &Vec<String>
+) {
   ctx.verbosity += 1;
 }
 
@@ -30,54 +36,89 @@ fn version_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
 }
 */
 
-fn file_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    args: &Vec<String>) {
+fn file_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  args: &Vec<String>
+) {
   ctx.fname = args[0].clone();
 }
 
-fn param_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    args: &Vec<String>) {
+fn param_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  args: &Vec<String>
+) {
   ctx.params.insert(args[0].clone(), args[1].clone());
 }
 
-fn cmd_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    args: &Vec<String>) {
+fn cmd_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  args: &Vec<String>
+) {
   ctx.cmd = args[0].clone();
 }
 
-fn subcmd_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    args: &Vec<String>) {
+fn subcmd_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  args: &Vec<String>
+) {
   ctx.subcmd = args[0].clone();
 }
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-  let help_spec = arg::Builder::new().sopt('h').lopt("help").exit(true)
-      .help(&["Show this help."]).build(help_proc);
-  let verbose_spec = arg::Builder::new().sopt('v').lopt("verbose")
-      .help(&["Increase level of verbosity.", "Be quiet by default."])
-      .build(verbose_proc);
-  let version_spec = arg::Builder::new().sopt('V').lopt("version").exit(true)
-      .help(&["Output tool version and exit."])
-      .build(|_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-      _args: &Vec<String>| ctx.do_version = true);
-  let file_spec = arg::Builder::new().sopt('f').lopt("file")
-      .help(&["Use data in FILE."])
-      .nargs(arg::Nargs::Count(1), &["FILE"]).build(file_proc);
-  let param_spec = arg::Builder::new().sopt('p').lopt("param")
-      .help(&["Add a key/value parameter field. The key must be unique."])
-      .nargs(arg::Nargs::Count(2), &["KEY", "VALUE"]).build(param_proc);
-  let cmd_spec = arg::Builder::new().name("command").required(true)
-      .nargs(arg::Nargs::Count(1), &["COMMAND"])
-      .help(&["The command to run."])
-      .build(cmd_proc);
-  let subcmd_spec = arg::Builder::new().name("subcmd")
-      .nargs(arg::Nargs::Count(1), &["SUBCMD"])
-      .help(&["Command-specific sub-command."])
-      .build(subcmd_proc);
+  let help_spec = arg::Builder::new()
+    .sopt('h')
+    .lopt("help")
+    .exit(true)
+    .help(&["Show this help."])
+    .build(help_proc);
+  let verbose_spec = arg::Builder::new()
+    .sopt('v')
+    .lopt("verbose")
+    .help(&["Increase level of verbosity.", "Be quiet by default."])
+    .build(verbose_proc);
+  let version_spec = arg::Builder::new()
+    .sopt('V')
+    .lopt("version")
+    .exit(true)
+    .help(&["Output tool version and exit."])
+    .build(
+      |_spec: &arg::Spec<MyContext>,
+       ctx: &mut MyContext,
+       _args: &Vec<String>| ctx.do_version = true
+    );
+  let file_spec = arg::Builder::new()
+    .sopt('f')
+    .lopt("file")
+    .help(&["Use data in FILE."])
+    .nargs(arg::Nargs::Count(1), &["FILE"])
+    .build(file_proc);
+  let param_spec = arg::Builder::new()
+    .sopt('p')
+    .lopt("param")
+    .help(&["Add a key/value parameter field. The key must be unique."])
+    .nargs(arg::Nargs::Count(2), &["KEY", "VALUE"])
+    .build(param_proc);
+  let cmd_spec = arg::Builder::new()
+    .name("command")
+    .required(true)
+    .nargs(arg::Nargs::Count(1), &["COMMAND"])
+    .help(&["The command to run."])
+    .build(cmd_proc);
+  let subcmd_spec = arg::Builder::new()
+    .name("subcmd")
+    .nargs(arg::Nargs::Count(1), &["SUBCMD"])
+    .help(&["Command-specific sub-command."])
+    .build(subcmd_proc);
 
 
-  let ctx = MyContext{..Default::default()};
+  let ctx = MyContext {
+    ..Default::default()
+  };
   let mut prsr = arg::Parser::from_env(ctx);
 
   prsr.add(help_spec)?;
@@ -102,4 +143,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
   Ok(())
 }
 
-/* vim: set ft=rust et sw=2 ts=2 sts=2 cinoptions=2 tw=79 :*/
+/* vim: set ft=rust et sw=2 ts=2 sts=2 cinoptions=2 tw=79 : */

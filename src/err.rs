@@ -1,7 +1,7 @@
-use std::fmt;
-use std::error::Error as StdError;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::error::Error as StdError;
+use std::fmt;
+use std::rc::Rc;
 
 use crate::spec::Spec;
 
@@ -27,7 +27,7 @@ pub enum ErrKind<C> {
   Collision(String)
 }
 
-impl<C> StdError for ErrKind<C> { }
+impl<C> StdError for ErrKind<C> {}
 
 
 impl<C> fmt::Display for ErrKind<C> {
@@ -35,7 +35,7 @@ impl<C> fmt::Display for ErrKind<C> {
     match &*self {
       ErrKind::MissArg(s) => {
         f.write_fmt(format_args!("Missing argument ({})", s))
-      },
+      }
       ErrKind::MissSpec(s) => {
         f.write_fmt(format_args!("Missing argspec; {}", s))
       }
@@ -57,7 +57,7 @@ impl<C> fmt::Debug for ErrKind<C> {
     match &*self {
       ErrKind::MissArg(s) => {
         f.write_fmt(format_args!("Missing argument ({})", s))
-      },
+      }
       ErrKind::MissSpec(s) => {
         f.write_fmt(format_args!("Missing argspec; {}", s))
       }

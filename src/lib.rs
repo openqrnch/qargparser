@@ -1,10 +1,10 @@
-mod spec;
+mod err;
 mod parser;
 mod prsrutil;
-mod err;
+mod spec;
 
-pub use crate::spec::{Spec, Nargs, Builder};
-pub use crate::parser::{Parser};
+pub use crate::parser::Parser;
+pub use crate::spec::{Builder, Nargs, Spec};
 
 pub use crate::err::ErrKind;
 

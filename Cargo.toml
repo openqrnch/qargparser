@@ -1,13 +1,12 @@
 [package]
 name = "qargparser"
-version = "0.5.0"
+version = "0.5.2"
 authors = ["Jan Danielsson <jan.danielsson@qrnch.com>"]
 edition = "2018"
 license = "0BSD"
 keywords = [ "cli", "commandline", "argument", "parser" ]
 repository = "https://github.com/openqrnch/qargparser"
 description = "Argument parser."
-exclude = [ "todo.text", "tag.sh" ]
 
 [dependencies]
 qpprint = { version = "0.1.1" }

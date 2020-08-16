@@ -16,21 +16,29 @@ fn opt_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext) {
 }
 */
 
-fn arg_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    _args: &Vec<String>) {
+fn arg_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  _args: &Vec<String>
+) {
   ctx.argcount += 1;
 }
 
-fn help_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    _args: &Vec<String>) {
+fn help_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  _args: &Vec<String>
+) {
   ctx.do_help = true;
 }
 
-fn file_proc(_spec: &arg::Spec<MyContext>, ctx: &mut MyContext,
-    args: &Vec<String>) {
+fn file_proc(
+  _spec: &arg::Spec<MyContext>,
+  ctx: &mut MyContext,
+  args: &Vec<String>
+) {
   ctx.fname = args[0].clone();
 }
-
 
 
 #[cfg(test)]
@@ -60,22 +68,29 @@ macro_rules! mkhelp {
 
 #[test]
 fn exit_advances() -> Result<(), Box<dyn std::error::Error>> {
-  let ctx = MyContext{ ..Default::default() };
+  let ctx = MyContext {
+    ..Default::default()
+  };
 
   let help_spec = testutil::mkhelp();
-  let arg1 = arg::Builder::new().name("cmd1")
-      .nargs(arg::Nargs::Count(1), &["FIRST"]).required(true)
-      .build(arg_proc);
-  let arg2 = arg::Builder::new().name("cmd2")
-      .nargs(arg::Nargs::Count(1), &["SECOND"])
-      .build(arg_proc);
-  let arg3 = arg::Builder::new().name("cmd3")
-      .nargs(arg::Nargs::Count(1), &["EXIT"])
-      .exit(true)
-      .build(arg_proc);
-  let arg4 = arg::Builder::new().name("cmd4")
-      .nargs(arg::Nargs::Count(1), &["FOURTH"])
-      .build(arg_proc);
+  let arg1 = arg::Builder::new()
+    .name("cmd1")
+    .nargs(arg::Nargs::Count(1), &["FIRST"])
+    .required(true)
+    .build(arg_proc);
+  let arg2 = arg::Builder::new()
+    .name("cmd2")
+    .nargs(arg::Nargs::Count(1), &["SECOND"])
+    .build(arg_proc);
+  let arg3 = arg::Builder::new()
+    .name("cmd3")
+    .nargs(arg::Nargs::Count(1), &["EXIT"])
+    .exit(true)
+    .build(arg_proc);
+  let arg4 = arg::Builder::new()
+    .name("cmd4")
+    .nargs(arg::Nargs::Count(1), &["FOURTH"])
+    .build(arg_proc);
 
   assert_eq!(ctx.optcount, 0);
   assert_eq!(ctx.argcount, 0);
