@@ -316,6 +316,10 @@ existing 'capture all' argument"
         args.push(self.args[self.curarg].clone());
         self.curarg += 1;
       }
+
+      // Avoid indexing past the end of the vector later on.
+      self.curarg -= 1;
+
       return Ok(());
     }
 
