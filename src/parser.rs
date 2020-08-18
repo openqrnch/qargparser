@@ -439,6 +439,9 @@ existing 'capture all' argument"
     */
     for n in &self.specs {
       let n = n.borrow();
+      if n.is_hidden() {
+        continue;
+      }
       sv.push(n.get_usage_str());
     }
 
@@ -469,6 +472,9 @@ existing 'capture all' argument"
 
     for spec in &opts {
       let spec = spec.borrow();
+      if spec.is_hidden() {
+        continue;
+      }
       pp.set_indent(2);
       pp.print_p(out, &spec.get_opts_usage_str());
       pp.set_indent(4);

@@ -1,6 +1,6 @@
 [package]
 name = "qargparser"
-version = "0.5.3"
+version = "0.5.4"
 authors = ["Jan Danielsson <jan.danielsson@qrnch.com>"]
 edition = "2018"
 license = "0BSD"
