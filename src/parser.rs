@@ -22,6 +22,7 @@ pub struct Parser<C> {
   argv0: String,
   args: Vec<String>,
   curarg: usize,
+  posplit: bool,
   posarg: usize,
   err: Option<ErrKind<C>>
 }
@@ -59,6 +60,7 @@ impl<C> Parser<C> {
       args: new_args,
       ctx,
       curarg: 0,
+      posplit: false,
       posarg: 0,
       err: None
     }
@@ -181,15 +183,23 @@ existing 'capture all' argument"
       return Ok(None);
     }
 
+    if self.args[self.curarg] == "--" {
+      self.posplit = true;
+      self.curarg = self.curarg + 1;
+      if self.curarg == self.args.len() {
+        return Ok(None);
+      }
+    }
+
     let ret: Option<Rc<RefCell<Spec<C>>>>;
     let mut args: Vec<String> = Vec::new();
 
-    if prsrutil::maybe_lopt(&self.args[self.curarg]) {
+    if !self.posplit && prsrutil::maybe_lopt(&self.args[self.curarg]) {
       match self.proc_lopt(&mut args) {
         Ok(spec) => ret = Some(spec),
         Err(err) => return Err(err)
       }
-    } else if prsrutil::maybe_sopt(&self.args[self.curarg]) {
+    } else if !self.posplit && prsrutil::maybe_sopt(&self.args[self.curarg]) {
       match self.proc_sopt(&mut args) {
         Ok(spec) => ret = Some(spec),
         Err(err) => return Err(err)
