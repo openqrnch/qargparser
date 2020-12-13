@@ -12,6 +12,7 @@ use crate::spec::Spec;
 use crate::err::{ErrKind, SpecErr};
 
 
+/// The core parser.
 pub struct Parser<C> {
   ctx: C,
   specs: Vec<Rc<RefCell<Spec<C>>>>,
@@ -24,10 +25,13 @@ pub struct Parser<C> {
   curarg: usize,
   posplit: bool,
   posarg: usize,
-  err: Option<ErrKind<C>>
+  err: Option<ErrKind<C>>,
+  tophelp: Vec<String>,
+  bottomhelp: Vec<String>
 }
 
 impl<C> Parser<C> {
+  /// Create a parser for parsing the process' command line arguments.
   pub fn from_env(ctx: C) -> Self {
     let args: Vec<String> = env::args().collect();
     let args2 = &args[1..];
@@ -62,7 +66,9 @@ impl<C> Parser<C> {
       curarg: 0,
       posplit: false,
       posarg: 0,
-      err: None
+      err: None,
+      tophelp: Vec::new(),
+      bottomhelp: Vec::new()
     }
   }
 
@@ -155,6 +161,44 @@ existing 'capture all' argument"
     }
     false
   }
+
+  pub fn set_tophelp<I, S>(&mut self, p: I)
+  where
+    I: IntoIterator<Item = S>,
+    S: ToString
+  {
+    self.tophelp = p.into_iter().map(|x| x.to_string()).collect::<Vec<_>>();
+  }
+
+
+  pub fn append_tophelp<I, S>(&mut self, p: I)
+  where
+    I: IntoIterator<Item = S>,
+    S: ToString
+  {
+    let mut ps = p.into_iter().map(|x| x.to_string()).collect::<Vec<_>>();
+    self.tophelp.append(&mut ps);
+  }
+
+
+  pub fn set_bottomhelp<I, S>(&mut self, p: I)
+  where
+    I: IntoIterator<Item = S>,
+    S: ToString
+  {
+    self.bottomhelp = p.into_iter().map(|x| x.to_string()).collect::<Vec<_>>();
+  }
+
+
+  pub fn append_bottomhelp<I, S>(&mut self, p: I)
+  where
+    I: IntoIterator<Item = S>,
+    S: ToString
+  {
+    let mut ps = p.into_iter().map(|x| x.to_string()).collect::<Vec<_>>();
+    self.bottomhelp.append(&mut ps);
+  }
+
 
   pub fn parse(&mut self) -> Result<Option<Rc<RefCell<Spec<C>>>>, ErrKind<C>> {
     /*
@@ -422,18 +466,48 @@ existing 'capture all' argument"
   }
 
 
-  /// Print out help text for all registered options.
+  /// Print out help text for parser options.
+  ///
+  /// Hidden options will not be displayed.
+  ///
+  /// The overall format for the help text is:
+  /// ```plain
+  /// Usage: <cmd> [options] [positional arguments]
+  ///
+  /// [top help]
+  ///
+  /// [options]
+  ///
+  /// [positional arguments]
+  ///
+  /// [bottom help]
+  /// ```
   pub fn usage(&self, out: &mut dyn std::io::Write) {
     self.print_usage(out);
+
+    if !self.tophelp.is_empty() {
+      println!("");
+    }
+    self.print_tophelp(out);
+
     self.print_opts(out);
     self.print_posargs(out);
+
+    if !self.bottomhelp.is_empty() {
+      println!("");
+    }
+
+    self.print_bottomhelp(out);
   }
+
 
   /// Print the "Usage" part of the help.
   ///
   /// The output format is:
   ///
+  /// ```plain
   /// Usage: <command> [arguments] [positional arguments]
+  /// ```
   pub fn print_usage(&self, out: &mut dyn std::io::Write) {
     let mut sv = Vec::new();
     let mut pp = pprint::PPrint::new();
@@ -465,6 +539,29 @@ existing 'capture all' argument"
 
     pp.set_indent(7).set_hang(-7);
     pp.print_words(out, &sv);
+  }
+
+
+  pub fn print_tophelp(&self, out: &mut dyn std::io::Write) {
+    if self.tophelp.is_empty() {
+      return;
+    }
+
+    let pp = pprint::PPrint::new();
+    for p in &self.tophelp {
+      pp.print_p(out, p);
+    }
+  }
+
+  pub fn print_bottomhelp(&self, out: &mut dyn std::io::Write) {
+    if self.bottomhelp.is_empty() {
+      return;
+    }
+
+    let pp = pprint::PPrint::new();
+    for p in &self.bottomhelp {
+      pp.print_p(out, p);
+    }
   }
 
 

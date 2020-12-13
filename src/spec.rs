@@ -33,6 +33,7 @@ enum Handler {
 */
 
 
+/// Parser option/argument specification builder.
 //#[derive(Default)]
 pub struct Builder {
   sopt: Option<char>,
@@ -63,19 +64,27 @@ impl Builder {
     }
   }
 
+  /// Make argument specification a single-character option.
   pub fn sopt(&mut self, sopt: char) -> &mut Self {
     self.sopt = Some(sopt);
     self
   }
+
+
+  /// Make argument specification a long option name.
   pub fn lopt(&mut self, lopt: &str) -> &mut Self {
     self.lopt = Some(String::from(lopt));
     self
   }
+
+  /// Assign argument specification a name.  This is required for positional
+  /// arguments.
   pub fn name(&mut self, name: &str) -> &mut Self {
     self.name = Some(String::from(name));
     self
   }
 
+  /// Declare that this argument specification takes arguments.
   pub fn nargs<I, S>(&mut self, nargs: Nargs, metanames: I) -> &mut Self
   where
     I: IntoIterator<Item = S>,
@@ -85,6 +94,8 @@ impl Builder {
     self.metanames(metanames);
     self
   }
+
+  /// Assign meta-names to the arguments.
   pub fn metanames<I, S>(&mut self, metanames: I) -> &mut Self
   where
     I: IntoIterator<Item = S>,
@@ -113,14 +124,28 @@ impl Builder {
     }
     self
   }
+
+  /// Specify if encountering this argument specification should terminate the
+  /// parser.
+  ///
+  /// This is useful for options that should terminate normal program
+  /// behavor, such as `--help` or if a positional argumen has been encountered
+  /// which should abort the parser because the rest of the arguments should be
+  /// parsed by a different parser.
   pub fn exit(&mut self, exit: bool) -> &mut Self {
     self.exit = exit;
     self
   }
+
+  /// Tell the parser that the argument must be processed.  This is only useful
+  /// for positional arguments.
   pub fn required(&mut self, req: bool) -> &mut Self {
     self.required = req;
     self
   }
+
+  /// Hidden arguments exist and work as usual, but they are not displayed in
+  /// the help screen.
   pub fn hidden(&mut self, hidden: bool) -> &mut Self {
     self.hidden = hidden;
     self
@@ -163,6 +188,7 @@ impl Builder {
 }
 
 
+/// Option/argument specification.
 //#[derive(Default)]
 pub struct Spec<C> {
   /// Optional short option.  This must be unique within a `[Parser]` context.
